@@ -647,10 +647,13 @@ outf_perror(const struct tcb * const tcp)
 		perror_msg("%s", outfname);
 }
 
+int doprint = 0;
+
 ATTRIBUTE_FORMAT((printf, 1, 0))
 static void
 tvprintf(const char *const fmt, va_list args)
 {
+    if (!doprint) return;
 	if (current_tcp) {
 		int n = vfprintf(current_tcp->outf, fmt, args);
 		if (n < 0) {
@@ -664,6 +667,7 @@ tvprintf(const char *const fmt, va_list args)
 void
 tprintf(const char *fmt, ...)
 {
+    if (!doprint) return;
 	va_list args;
 	va_start(args, fmt);
 	tvprintf(fmt, args);
@@ -677,6 +681,7 @@ tprintf(const char *fmt, ...)
 void
 tprints(const char *str)
 {
+    if (!doprint) return;
 	if (current_tcp) {
 		int n = fputs_unlocked(str, current_tcp->outf);
 		if (n >= 0) {
@@ -691,6 +696,7 @@ tprints(const char *str)
 void
 tprints_comment(const char *const str)
 {
+    if (!doprint) return;
 	if (str && *str)
 		tprintf(" /* %s */", str);
 }
@@ -698,6 +704,7 @@ tprints_comment(const char *const str)
 void
 tprintf_comment(const char *fmt, ...)
 {
+    if (!doprint) return;
 	if (!fmt || !*fmt)
 		return;
 

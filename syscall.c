@@ -24,6 +24,9 @@
 #include "retval.h"
 #include <limits.h>
 
+#include <sys/types.h>
+#include <sys/socket.h>
+
 /* for struct iovec */
 #include <sys/uio.h>
 
@@ -616,6 +619,8 @@ syscall_entering_decode(struct tcb *tcp)
 	return 1;
 }
 
+extern int doprint;
+
 int
 syscall_entering_trace(struct tcb *tcp, unsigned int *sig)
 {
@@ -667,11 +672,24 @@ syscall_entering_trace(struct tcb *tcp, unsigned int *sig)
 	if (!is_complete_set(status_set, NUMBER_OF_STATUSES))
 		strace_open_memstream(tcp);
 
-	printleader(tcp);
-	tprintf("%s(", tcp_sysent(tcp)->sys_name);
-	int res = raw(tcp) ? printargs(tcp) : tcp_sysent(tcp)->sys_func(tcp);
-	fflush(tcp->outf);
-	return res;
+    // Horrible hack
+    // There's no easy way to go from SYSCALL to its number
+    // 42 is connect
+    if (tcp->scno == 42) {
+        const int addrlen = tcp->u_arg[2];
+        int sa_family = decode_sockaddr(tcp, tcp->u_arg[1], addrlen);
+        int inet = AF_INET;
+        int lol = (sa_family == inet);
+        if (lol)
+            doprint = 1;
+    }
+    printleader(tcp);
+    tprintf("%s(", tcp_sysent(tcp)->sys_name);
+    int res = raw(tcp) ? printargs(tcp) : tcp_sysent(tcp)->sys_func(tcp);
+    fflush(tcp->outf);
+    doprint=0;
+    return res;
+
 }
 
 void
